@@ -52,21 +52,34 @@ def insert_order(conn, customer_id, order_date, items):
 # ---------------------- STREAMLIT ----------------------
 st.set_page_config(page_title="Olist - Ajout de Commandes", layout="wide")
 
-# Styles custom (tu peux créer assets/style.css si tu veux plus de personnalisation)
-st.markdown("""
-<style>
-h1 {color: #0d6efd; text-align:center;}
-h2 {color: #198754;}
-.stButton>button {background-color: #0d6efd; color:white; font-weight:bold;}
-.stMetric {background-color: #f8f9fa; padding:10px; border-radius:8px;}
-</style>
-""", unsafe_allow_html=True)
+# Charger CSS externe pour un style moderne/pro
+try:
+    with open("assets/style.css", "r", encoding="utf-8") as f:
+        css = f.read()
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+except Exception:
+    # fallback — style basique si le fichier est manquant
+    st.markdown("""
+    <style>
+    .app-card { padding:18px; border-radius:12px; background:#ffffff; box-shadow:0 6px 18px rgba(15,15,15,0.08); }
+    .page-title { font-family: Inter, sans-serif; font-size:28px; color:#0b3d91; text-align:center; margin-bottom:8px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-st.markdown("<h1>🛒 Ajout de commandes Olist</h1>", unsafe_allow_html=True)
+# Header visuel professionnel
+st.markdown("""
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-center">
+      <div class="topbar-title">🛒 Ajout de commandes Olist</div>
+      <div class="small-muted">Application interne de gestin des commandes </div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Connexion RDS
 conn = connect_rds()
-
 
 if conn:
     # Charger les données
@@ -82,73 +95,110 @@ if conn:
     freight_lookup = product_info["freight_value"].to_dict()
     sellers_lookup = order_items_info.groupby("product_id")["seller_id"].unique().to_dict()
 
-    # --- Formulaire ---
-    st.subheader("➕ Ajouter une nouvelle commande")
+    # --- Formulaire dans layout 2 colonnes (gauche: form, droite: aperçu) ---
+    st.subheader("Ajouter une nouvelle commande")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        customer_choice = st.selectbox("Client", clients["customer_unique_id"])
-        customer_id = clients.loc[clients["customer_unique_id"] == customer_choice, "customer_id"].values[0]
-    with col2:
-        order_date = st.date_input("Date de commande", datetime.today())
+    # Carte globale
+    st.markdown('<div class="app-card">', unsafe_allow_html=True)
+    col_left, col_right = st.columns([2, 1])
 
-    st.markdown("### Produits")
-    items = []
-    n_items = st.number_input("Nombre de produits", min_value=1, value=1)
+    with col_left:
+        # Formulaire principal
+        col1, col2 = st.columns(2)
+        with col1:
+            customer_choice = st.selectbox("Client", clients["customer_unique_id"])
+            customer_id = clients.loc[clients["customer_unique_id"] == customer_choice, "customer_id"].values[0]
+        with col2:
+            order_date = st.date_input("Date de commande", datetime.today())
 
-    for i in range(int(n_items)):
-        st.write(f"#### Produit {i+1}")
-        colA, colB, colC, colD = st.columns(4)
+        st.markdown("### Produits")
+        items = []
+        n_items = st.number_input("Nombre de produits", min_value=1, value=1)
 
-        with colA:
-            product_choice_name = st.selectbox("Produit", products["display_name"], key=f"prod_{i}")
-            product_choice_id = products_lookup[product_choice_name]
+        for i in range(int(n_items)):
+            st.markdown(f'<div class="product-row"> <strong>Produit {i+1}</strong> </div>', unsafe_allow_html=True)
+            colA, colB, colC, colD = st.columns([2,1,1,1])
 
-        # Prix et frais par défaut
-        price_default = price_lookup.get(product_choice_id, 0.0)
-        freight_default = freight_lookup.get(product_choice_id, 0.0)
-        product_sellers = sellers_lookup.get(product_choice_id, ["unknown_seller"])
+            with colA:
+                product_choice_name = st.selectbox("Produit", products["display_name"], key=f"prod_{i}")
+                product_choice_id = products_lookup[product_choice_name]
 
-        # Number_input avec key unique dépendant du produit
-        with colB:
-            price = st.number_input(
-                "Prix",
-                min_value=0.0,
-                value=float(price_default),
-                step=0.1,
-                key=f"price_{i}_{product_choice_id}"  # key unique par produit
-            )
-        with colC:
-            freight_value = st.number_input(
-                "Frais",
-                min_value=0.0,
-                value=float(freight_default),
-                step=0.1,
-                key=f"freight_{i}_{product_choice_id}"  # key unique par produit
-            )
-        with colD:
-            seller_choice = st.selectbox(
-                "Seller",
-                product_sellers,
-                key=f"seller_{i}_{product_choice_id}"  # key unique par produit
-            )
+            # Prix et frais par défaut
+            price_default = price_lookup.get(product_choice_id, 0.0)
+            freight_default = freight_lookup.get(product_choice_id, 0.0)
+            product_sellers = sellers_lookup.get(product_choice_id, ["unknown_seller"])
 
-        items.append({
-            "product_id": product_choice_id,
-            "price": price,
-            "freight_value": freight_value,
-            "seller_id": seller_choice
-        })
+            with colB:
+                price = st.number_input(
+                    "Prix",
+                    min_value=0.0,
+                    value=float(price_default),
+                    step=0.1,
+                    key=f"price_{i}_{product_choice_id}"
+                )
+            with colC:
+                freight_value = st.number_input(
+                    "Frais",
+                    min_value=0.0,
+                    value=float(freight_default),
+                    step=0.1,
+                    key=f"freight_{i}_{product_choice_id}"
+                )
+            with colD:
+                seller_choice = st.selectbox(
+                    "Seller",
+                    product_sellers,
+                    key=f"seller_{i}_{product_choice_id}"
+                )
 
-    total = sum([x["price"] + x["freight_value"] for x in items])
-    st.metric("Total commande", f"{total:.2f} $")
+            items.append({
+                "product_id": product_choice_id,
+                "product_name": product_choice_name,
+                "price": price,
+                "freight_value": freight_value,
+                "seller_id": seller_choice
+            })
 
-    if st.button("Ajouter la commande"):
-        st.write("Items à insérer:", items)
-        order_id = insert_order(conn, customer_id, order_date, items)
-        if order_id:
-            st.success(f"Commande ajoutée avec succès !")
+        # Boutons d'action sous le formulaire
+        btn_col1, btn_col2 = st.columns([1,1])
+        with btn_col1:
+            if st.button("Ajouter la commande", key="add_order_button"):
+                st.write("Items à insérer:", items)
+                order_id = insert_order(conn, customer_id, order_date, items)
+                if order_id:
+                    st.success("Commande ajoutée avec succès !")
+        with btn_col2:
+            if st.button("Réinitialiser le formulaire", key="reset_form"):
+                st.rerun()
 
+    with col_right:
+        # Aperçu / résumé de commande
+        st.markdown('<div class="summary-card">', unsafe_allow_html=True)
+        st.markdown("<h4>Récapitulatif</h4>", unsafe_allow_html=True)
+        if items:
+            # table de preview simplifiée
+            preview_df = pd.DataFrame([{
+                "Produit": it["product_name"],
+                "Prix": f'{it["price"]:.2f} $',
+                "Frais": f'{it["freight_value"]:.2f} $',
+                "Seller": it["seller_id"]
+            } for it in items])
+            st.table(preview_df)
+
+            total = sum([x["price"] + x["freight_value"] for x in items])
+            st.markdown(f'<div class="summary-total">Total commande<br><span class="total-amount">{total:.2f} $</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='small-muted'>Aucun produit sélectionné</div>", unsafe_allow_html=True)
+
+        # Téléchargement du preview (CSV)
+        try:
+            csv = pd.DataFrame(items).to_csv(index=False).encode('utf-8')
+            st.download_button("Télécharger preview (CSV)", data=csv, file_name="order_preview.csv", mime="text/csv")
+        except Exception:
+            pass
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # --- Historique 10 dernières commandes ---
     st.subheader("10 dernières commandes")
