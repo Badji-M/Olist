@@ -72,7 +72,7 @@ st.markdown("""
   <div class="topbar-inner">
     <div class="topbar-center">
       <div class="topbar-title">🛒 Ajout de commandes Olist</div>
-      <div class="small-muted">Application interne de gestin des commandes </div>
+      <div class="small-muted">Application interne de gestion des commandes </div>
     </div>
   </div>
 </div>
