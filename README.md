@@ -4,10 +4,10 @@
 Ce dépôt contient l'application Streamlit permettant d'ajouter des commandes (module de démonstration). Cette application fait partie d'un projet plus large : ingestion des fichiers Olist (CSV) vers AWS S3, transformation et chargement dans une base RDS MySQL depuis une instance EC2, puis visualisation temps réel via un dashboard Tableau connecté à RDS.
 
 ## Membres du projet
-Pape Mamadou BADJI
-Ndeye Kharu SALL
-Enagnon Justion BOGNON
-Pko Ibrahim NOBA
+- Pape Mamadou BADJI
+- Ndeye Khary SALL
+- Enagnon Justin BOGNON
+- Poko Ibrahim NOBA
 
 ## Liens
 - Lien vers le dashboard Tableau : <https://public.tableau.com/app/profile/pape.mamadou.badji/viz/Dashboard_AWS_Olist_AS3/VueglobaleURL_DASHBOARD_A_METTRE_ICI>
